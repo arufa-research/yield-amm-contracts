@@ -1,20 +1,4 @@
 
-// TODO: remove the address and derive the account address
-// using chain's derivation page
-// find a good way to show user the address based on the network
-// they choose to run the script against
-const secret_testnet_accounts = [
-  {
-    name: 'account_0',
-    address: 'secret1l0g5czqw7vjvd20ezlk4x7ndgyn0rx5aumr8gk',
-    mnemonic: 'snack cable erode art lift better october drill hospital clown erase address'
-  },
-  {
-    name: 'account_1',
-    address: 'secret1ddfphwwzqtkp8uhcsc53xdu24y9gks2kug45zv',
-    mnemonic: 'sorry object nation also century glove small tired parrot avocado pulp purchase'
-  }
-];
 
 const juno_testnet_accounts = [
   {
@@ -37,22 +21,6 @@ const neutron_testnet_accounts = [
   },
 ];
 
-const archway_testnet_accounts = [
-  {
-    name: 'admin',
-    address: 'archway1jtdje5vq42sknl22r4wu9sahryu5wcrd3yd7z8',
-    mnemonic: 'category fine rapid trumpet dune early wish under nothing dance property wreck'
-  },
-];
-
-const terra_testnet_accounts = [
-  {
-    name: 'admin',
-    address: 'terra1jtdje5vq42sknl22r4wu9sahryu5wcrdztt62s',
-    mnemonic: 'category fine rapid trumpet dune early wish under nothing dance property wreck'
-  },
-];
-
 const localnet_accounts = [
   {
     name: 'account_0',
@@ -61,11 +29,7 @@ const localnet_accounts = [
   }
 ];
 
-const secret_mainnet_accounts = [
-];
 const juno_mainnet_accounts = [
-];
-const terra_mainnet_accounts = [
 ];
 
 // Default list covers most of the supported network
@@ -75,16 +39,6 @@ const networks = {
     endpoint: 'http://localhost:26657/',
     chainId: 'testing-1',
     accounts: localnet_accounts,
-  },
-  secret_testnet: {
-    endpoint: 'http://testnet.securesecrets.org:1317/',
-    chainId: 'pulsar-2',
-    accounts: secret_testnet_accounts,
-  },
-  secret_mainnet: {
-    endpoint: 'https://secretnetwork-lcd.stakely.io/',
-    chainId: 'secret-4',
-    accounts: secret_mainnet_accounts,
   },
   juno_testnet: {
     endpoint: 'https://rpc.uni.juno.deuslabs.fi/',
@@ -100,11 +54,6 @@ const networks = {
     endpoint: 'https://rpc.baryon.ntrn.info/',
     chainId: 'baryon-1',
     accounts: neutron_testnet_accounts,
-  },
-  archway_testnet: {
-    endpoint: 'https://rpc.constantine-2.archway.tech',
-    chainId: 'constantine-2',
-    accounts: archway_testnet_accounts,
   },
   terra_testnet: {
     endpoint: 'https://terra-testnet-rpc.polkachu.com:443/',

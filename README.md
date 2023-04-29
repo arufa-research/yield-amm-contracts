@@ -1,12 +1,4 @@
-# Secret Contracts Counter Example
-
-This template contains simple counter contracts.
-The contract is created with a parameter for the initial count and allows subsequent incrementing.
-
-# Contract Functions
-- `Increment`: Any user can increment the current count by 1.
-- `Reset`: Only the owner can reset the count to a specific number.
-- `get_count`: Any user can use this function to see current counter value.
+# Yield AMM contracts
 
 # Compiling contracts
 
@@ -15,7 +7,7 @@ Use this command to compile your contracts:
 
 # Run script
 
-`wasmkit run scripts/sample-script.js`
+`wasmkit run scripts/sample-script.ts`
 
 # Deploying contracts
 
@@ -23,7 +15,7 @@ In `scripts` folder:
 
 First of all you need to create an instance of your contract using contract name.
 ```js
-const contract = new Contract('sample-project', runtimeEnv);
+const contract = new Contract('sample-project');
 
 // To deploy your contract
 const deploy_response = await contract.deploy(account);
@@ -36,7 +28,8 @@ Note: You can check out your contract information in `deploy_response`.
 
 # Interact with contracts
 
-`wasmkit` will load functions using schema, you can call contract functions using `contract.tx`(to execute transactions) and `contract.query`(to query from contract)
+`wasmkit` will load functions using schema, you can call contract functions using `contract.tx`(to execute transactions) and `contract.query`(to query from contract).
+
 ```js
 // To interact with your contract
 // Execute contract function
