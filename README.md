@@ -3,17 +3,23 @@
 # Compiling contracts
 
 Use this command to compile your contracts: 
-`wasmkit compile`
 
-# Run script
+```bash
+$ wasmkit compile
+```
 
-`wasmkit run scripts/sample-script.ts`
+# Running script
+
+```bash
+$ wasmkit run scripts/sample-script.ts
+```
 
 # Deploying contracts
 
-In `scripts` folder:
+In `scripts/` directory:
 
 First of all you need to create an instance of your contract using contract name.
+
 ```js
 const contract = new Contract('sample-project');
 
@@ -26,7 +32,7 @@ await contract.instantiate({"count": 102}, "deploy test", account);
 
 Note: You can check out your contract information in `deploy_response`.
 
-# Interact with contracts
+# Interacting with contracts
 
 `wasmkit` will load functions using schema, you can call contract functions using `contract.tx`(to execute transactions) and `contract.query`(to query from contract).
 

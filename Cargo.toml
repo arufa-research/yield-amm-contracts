@@ -1,5 +1,11 @@
 [workspace]
-members = ["contracts/*", "packages/*"]
+members = [
+  "contracts/governance-token",
+  "contracts/principle-token",
+  "contracts/yield-token",
+  "contracts/yield-bearing-token",
+  "packages/*"
+]
 
 [profile.release]
 opt-level = 3

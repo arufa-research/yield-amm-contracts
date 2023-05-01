@@ -1,5 +1,3 @@
-
-
 const juno_testnet_accounts = [
   {
     name: 'account_0',
@@ -13,14 +11,6 @@ const juno_testnet_accounts = [
   }
 ];
 
-const neutron_testnet_accounts = [
-  {
-    name: 'admin',
-    address: 'neutron1jtdje5vq42sknl22r4wu9sahryu5wcrdqsccjh',
-    mnemonic: 'category fine rapid trumpet dune early wish under nothing dance property wreck'
-  },
-];
-
 const localnet_accounts = [
   {
     name: 'account_0',
@@ -30,6 +20,11 @@ const localnet_accounts = [
 ];
 
 const juno_mainnet_accounts = [
+  {
+    name: 'account_0',
+    address: '',
+    mnemonic: ''
+  }
 ];
 
 // Default list covers most of the supported network
@@ -50,39 +45,30 @@ const networks = {
     chainId: 'juno-1',
     accounts: juno_mainnet_accounts,
   },
-  neutron_testnet: {
-    endpoint: 'https://rpc.baryon.ntrn.info/',
-    chainId: 'baryon-1',
-    accounts: neutron_testnet_accounts,
-  },
-  terra_testnet: {
-    endpoint: 'https://terra-testnet-rpc.polkachu.com:443/',
-    accounts: terra_testnet_accounts,
-    fees: {
-      upload: {
-        amount: [{ amount: "100000", denom: "uluna" }],
-        gas: "500000",
-      },
-      init: {
-        amount: [{ amount: "50000", denom: "uluna" }],
-        gas: "250000",
-      },
-      exec: {
-        amount: [{ amount: "50000", denom: "uluna" }],
-        gas: "250000",
-      }
-    },
-  },
-  terra_mainnet: {
-    endpoint: 'https://terra-rpc.stakely.io:443/',
-    accounts: terra_mainnet_accounts,
-  }
+  // terra_testnet: {
+  //   endpoint: 'https://terra-testnet-rpc.polkachu.com:443/',
+  //   accounts: terra_testnet_accounts,
+  //   fees: {
+  //     upload: {
+  //       amount: [{ amount: "100000", denom: "uluna" }],
+  //       gas: "500000",
+  //     },
+  //     init: {
+  //       amount: [{ amount: "50000", denom: "uluna" }],
+  //       gas: "250000",
+  //     },
+  //     exec: {
+  //       amount: [{ amount: "50000", denom: "uluna" }],
+  //       gas: "250000",
+  //     }
+  //   },
+  // }
 };
 
 module.exports = {
   networks: {
-    default: networks.neutron_testnet,
-    testnet: networks.neutron_testnet,
+    default: networks.juno_testnet,
+    testnet: networks.juno_testnet,
     localnet: networks.localnet,
     mainnet: networks.juno_mainnet,
   },
@@ -93,7 +79,7 @@ module.exports = {
     version: "1.63.0",
   },
   commands: {
-    compile: "RUSTFLAGS='-C link-arg=-s' cargo build --release --target wasm32-unknown-unknown",
-    schema: "cargo run --example schema",
+    compile: "cargo wasm",
+    schema: "cargo schema",
   }
 };
