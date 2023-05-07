@@ -1,13 +1,13 @@
-const juno_testnet_accounts = [
+const osmo_testnet_accounts = [
   {
     name: 'account_0',
-    address: 'juno1evpfprq0mre5n0zysj6cf74xl6psk96gus7dp5',
-    mnemonic: 'omit sphere nurse rib tribe suffer web account catch brain hybrid zero act gold coral shell voyage matter nose stick crucial fog judge text'
+    address: 'osmo1jtdje5vq42sknl22r4wu9sahryu5wcrdv5z27z',
+    mnemonic: 'category fine rapid trumpet dune early wish under nothing dance property wreck'
   },
   {
     name: 'account_1',
-    address: 'juno1njamu5g4n0vahggrxn4ma2s4vws5x4w3u64z8h',
-    mnemonic: 'student prison fresh dwarf ecology birth govern river tissue wreck hope autumn basic trust divert dismiss buzz play pistol focus long armed flag bicycle'
+    address: 'osmo1ytc8aerh9twa5w5lfn4d76nnj4r2svyzrq89kk',
+    mnemonic: 'fatigue renew birth gossip bar suffer peanut expire bulb forest garage upper'
   }
 ];
 
@@ -19,7 +19,7 @@ const localnet_accounts = [
   }
 ];
 
-const juno_mainnet_accounts = [
+const osmo_mainnet_accounts = [
   {
     name: 'account_0',
     address: '',
@@ -35,15 +35,15 @@ const networks = {
     chainId: 'testing-1',
     accounts: localnet_accounts,
   },
-  juno_testnet: {
-    endpoint: 'https://rpc.uni.juno.deuslabs.fi/',
-    chainId: 'uni-6',
-    accounts: juno_testnet_accounts,
+  osmo_testnet: {
+    endpoint: 'https://rpc.testnet.osmosis.zone/',
+    chainId: 'osmosis-1',
+    accounts: osmo_testnet_accounts,
   },
-  juno_mainnet: {
-    endpoint: 'https://juno-rpc.polkachu.com/',
-    chainId: 'juno-1',
-    accounts: juno_mainnet_accounts,
+  osmo_mainnet: {
+    endpoint: 'https://rpc.osmosis.zone/',
+    chainId: 'osmo-test-5',
+    accounts: osmo_mainnet_accounts,
   },
   // terra_testnet: {
   //   endpoint: 'https://terra-testnet-rpc.polkachu.com:443/',
@@ -67,10 +67,10 @@ const networks = {
 
 module.exports = {
   networks: {
-    default: networks.juno_testnet,
-    testnet: networks.juno_testnet,
+    default: networks.osmo_testnet,
+    testnet: networks.osmo_testnet,
     localnet: networks.localnet,
-    mainnet: networks.juno_mainnet,
+    mainnet: networks.osmo_mainnet,
   },
   mocha: {
     timeout: 60000
