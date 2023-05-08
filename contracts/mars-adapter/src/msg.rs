@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, Addr, Decimal};
+use cw20::Cw20ReceiveMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -9,12 +10,18 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     Deposit {},
-    Withdraw {
-        amount: Uint128,
-    },
     UpdateYieldBearingToken {
         yield_bearing_token: Addr,
     },
+
+    // Cw20 token interaction
+    Receive(Cw20ReceiveMsg),
+}
+
+// used by receive cw20
+#[cw_serde]
+pub enum Cw20HookMsg {
+    Withdraw {},
 }
 
 #[cw_serde]

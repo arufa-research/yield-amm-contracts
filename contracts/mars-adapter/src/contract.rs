@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::execute::{try_deposit, try_withdraw, try_update_yield_bearing_token};
+use crate::execute::{try_deposit, try_update_yield_bearing_token, try_receive_cw20};
 use crate::query::{query_user_deposit, query_total_deposit, query_config, query_state};
 use crate::red_bank::{RedBankQueryMsg, MarketResponse};
 use crate::state::{Config, State, CONFIG, STATE};
@@ -53,15 +53,16 @@ pub fn instantiate(
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => try_deposit(deps, info),
-        ExecuteMsg::Withdraw { amount } => try_withdraw(deps, info, amount),
         ExecuteMsg::UpdateYieldBearingToken { yield_bearing_token } => 
             try_update_yield_bearing_token(deps, info, yield_bearing_token),
+
+        ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),
     }
 }
 
