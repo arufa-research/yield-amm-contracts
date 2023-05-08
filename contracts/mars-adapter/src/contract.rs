@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::execute::{try_deposit, try_withdraw};
+use crate::execute::{try_deposit, try_withdraw, try_update_yield_bearing_token};
 use crate::query::{query_user_deposit, query_total_deposit, query_config, query_state};
 use crate::red_bank::{RedBankQueryMsg, MarketResponse};
 use crate::state::{Config, State, CONFIG, STATE};
@@ -20,29 +20,27 @@ pub fn instantiate(
     let config = Config {
         owner: info.sender.clone(),
         red_bank: msg.red_bank.clone(),
+        yield_bearing_token: None,
     };
 
-    let marketMsg = RedBankQueryMsg::Market {
+    let market_msg = RedBankQueryMsg::Market {
         denom: "uosmo".into(), // TODO: pick this from initMsg
     };
-    let marketQuery = WasmQuery::Smart {
+    let market_query = WasmQuery::Smart {
         contract_addr: config.red_bank.to_string(),
-        msg: to_binary(&marketMsg)?,
+        msg: to_binary(&market_msg)?,
     };
-
-    let marketData: MarketResponse = deps.querier.query(&QueryRequest::Wasm(
-        marketQuery
+    let market_data: MarketResponse = deps.querier.query(&QueryRequest::Wasm(
+        market_query
     ))?;
 
     let state = State {
         osmo_deposited: Uint128::from(0u128),
-        exchange_rate: marketData.liquidity_index,
+        exchange_rate: market_data.liquidity_index,
     };
 
     CONFIG.save(deps.storage, &config)?;
     STATE.save(deps.storage, &state)?;
-    // set_config(deps.storage).save(&config)?;
-    // set_state(deps.storage).save(&state)?;
 
     deps.api.debug(&format!("Contract was initialized by {}", info.sender));
 
@@ -60,8 +58,10 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => try_deposit(deps),
+        ExecuteMsg::Deposit {} => try_deposit(deps, info),
         ExecuteMsg::Withdraw { amount } => try_withdraw(deps, info, amount),
+        ExecuteMsg::UpdateYieldBearingToken { yield_bearing_token } => 
+            try_update_yield_bearing_token(deps, info, yield_bearing_token),
     }
 }
 

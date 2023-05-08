@@ -12,6 +12,9 @@ pub enum ExecuteMsg {
     Withdraw {
         amount: Uint128,
     },
+    UpdateYieldBearingToken {
+        yield_bearing_token: Addr,
+    },
 }
 
 #[cw_serde]
@@ -46,6 +49,7 @@ pub struct TotalDepositResponse {
 pub struct ConfigResponse {
     pub owner: Addr,
     pub red_bank: Addr,
+    pub yield_bearing_token: Addr,
 }
 
 #[cw_serde]

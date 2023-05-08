@@ -10,6 +10,7 @@ use cw_storage_plus::Item;
 pub struct Config {
     pub owner: Addr,
     pub red_bank: Addr,
+    pub yield_bearing_token: Option<Addr>,
 }
 
 #[cw_serde]
@@ -20,3 +21,4 @@ pub struct State {
 
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const STATE: Item<State> = Item::new("state");
+// pub const OSMO_BALANCES: Map<&Addr, Uint128> = Map::new("osmo_balance");

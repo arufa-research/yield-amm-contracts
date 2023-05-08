@@ -1,6 +1,31 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint128};
-// use cosmwasm_std::{Uint128, Addr, Decimal};
+
+#[cw_serde]
+#[allow(clippy::large_enum_variant)]
+pub enum RedBankExecuteMsg {
+    Deposit {
+        on_behalf_of: Option<String>,
+    },
+    Withdraw {
+        denom: String,
+        amount: Option<Uint128>,
+        recipient: Option<String>,
+    },
+    Borrow {
+        denom: String,
+        amount: Uint128,
+        recipient: Option<String>,
+    },
+    Repay {
+        on_behalf_of: Option<String>,
+    },
+    Liquidate {
+        user: String,
+        collateral_denom: String,
+        recipient: Option<String>,
+    },
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]
