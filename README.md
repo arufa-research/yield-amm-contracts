@@ -1,6 +1,6 @@
-# YieldFi: Yield AMM contracts
+# FixedFi: Yield AMM contracts
 
-YieldFi is a DeFi protocol built using CosmWasm contracts that let anyone access to fixed yield on their assets.
+FixedFi is a DeFi protocol built using CosmWasm contracts that let anyone access to fixed yield on their assets.
 
 Split a yield bearing asset into principle token (pToken) and yield token (yToken) and yToken can be sold at a fixed price to fix the future yield and get it now. 
 
