@@ -1,5 +1,7 @@
 [workspace]
 members = [
+  "contracts/splitter",
+  "contracts/mars-adapter",
   "contracts/governance-token",
   "contracts/principle-token",
   "contracts/yield-token",
