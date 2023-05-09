@@ -36,13 +36,13 @@ const networks = {
     accounts: localnet_accounts,
   },
   osmo_testnet: {
-    endpoint: 'https://rpc.testnet.osmosis.zone/',
-    chainId: 'osmosis-1',
+    endpoint: 'https://rpc.testnet.osmosis.zone:443/',
+    chainId: 'osmo-test-4',
     accounts: osmo_testnet_accounts,
   },
   osmo_mainnet: {
     endpoint: 'https://rpc.osmosis.zone/',
-    chainId: 'osmo-test-5',
+    chainId: 'osmosis-1',
     accounts: osmo_mainnet_accounts,
   },
   // terra_testnet: {
