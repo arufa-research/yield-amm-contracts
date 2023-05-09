@@ -23,6 +23,32 @@ Users can even buy the pToken at discount w.r.t. undelying asset to get fixed yi
 
 # User stories
 
+## Switching from variable yield to fixed yeild
+
+1. A ybToken got from depositing Token to a yield generating DeFi protocol.
+2. Deposit ybToken into FixedFi to get pToken and yToken for fixed duration (example: 6 months).
+3. yToken represents the yield for the next 6 months which is variable.
+4. pToken represents the underlying asset locked up for 6 months.
+5. Sell the yToken at current market price through the AMM and fix the amount of yield for next 6 months.
+6. After 6 months unlock the underlying token from pToken.
+
+## Getting assets at discount (fixed APR with lock period)
+
+1. Instead of buying the asset, buy the pToken of that asset.
+2. pToken in the AMM is always at a dicount from underlying asset.
+3. The discount is due to lockup period (example 6 months) and separation of yield for that period.
+4. Directly buying pToken fixes the discount, hence fixing the yield on that asset for next 6 months.
+5. After 6 months, unlock the asset from the pToken.
+6. As time progresses, the price of pToken will steadily increase and will match the underlying at expiry.
+7. The amount of discount is proportional to the expected yield which is seprated using yToken.
+
+## Speculating on yield changes
+
+1. yToken is selling at a fixed price at a time through the AMM.
+2. The price represents the average yield over lock time that market expects.
+3. If user belives that the yield can go up in future that buying the yToken can give a positive APR.
+4. Buying more of yToken gives higher exposure to the future variable yield.
+
 # Compiling contracts
 
 Use this command to compile your contracts: 
