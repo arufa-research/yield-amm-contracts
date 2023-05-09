@@ -8,9 +8,10 @@
     "build:watch": "tsc -w -p ."
   },
   "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.30.1",
     "@types/chai": "^4.3.0",
+    @arufa/wasmkit": "^0.1.5",
     "chai": "^4.3.4",
-    "@arufa/wasmkit": "^0.1.5",
     "typescript": "^4.3.2"
   }
 }
