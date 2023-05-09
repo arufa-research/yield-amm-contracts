@@ -1,5 +1,5 @@
 [package]
-name = "refract"
+name = "splitter"
 version = "1.0.1"
 authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
 edition = "2021"
