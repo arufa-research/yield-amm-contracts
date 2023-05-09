@@ -90,10 +90,16 @@ pub fn try_deposit(
 
 pub fn try_update_yield_bearing_token(
     deps: DepsMut,
-    _info: MessageInfo,
+    info: MessageInfo,
     yield_bearing_token: Addr,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
+    if info.sender != config.owner {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Admin commands can only be ran from owner address",
+        )));
+    }
+
     config.yield_bearing_token = Some(yield_bearing_token);
 
     CONFIG.save(deps.storage, &config)?;
@@ -199,5 +205,3 @@ pub fn try_receive_cw20(
         }
     }
 }
-
-
