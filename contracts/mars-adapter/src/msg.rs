@@ -5,6 +5,7 @@ use cw20::Cw20ReceiveMsg;
 #[cw_serde]
 pub struct InstantiateMsg {
     pub red_bank: Addr,
+    pub denom: String
 }
 
 #[cw_serde]

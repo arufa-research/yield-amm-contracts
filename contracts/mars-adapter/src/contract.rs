@@ -24,7 +24,7 @@ pub fn instantiate(
     };
 
     let market_msg = RedBankQueryMsg::Market {
-        denom: "uosmo".into(), // TODO: pick this from initMsg
+        denom: msg.denom.clone(),
     };
     let market_query = WasmQuery::Smart {
         contract_addr: config.red_bank.to_string(),
@@ -59,7 +59,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => try_deposit(deps, info),
-        ExecuteMsg::UpdateYieldBearingToken { yield_bearing_token } => 
+        ExecuteMsg::UpdateYieldBearingToken { yield_bearing_token } =>
             try_update_yield_bearing_token(deps, info, yield_bearing_token),
 
         ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),

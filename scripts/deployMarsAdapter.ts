@@ -30,6 +30,7 @@ export default async function run () {
   const adapter_init_response = await mars_adapter.instantiate(
     {
       "red_bank": externalContracts.red_bank.contract_addr,
+      "denom": "uosmo"
     },
     `mars_adapter ${runTs}`,
     contract_owner,
