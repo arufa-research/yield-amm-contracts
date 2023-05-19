@@ -6,7 +6,7 @@ import { YieldBearingTokenContract } from "../artifacts/typescript_schema/YieldB
 
 export default async function run () {
   const runTs = String(new Date());
-  const contract_owner = await getAccountByName("account_0");
+  const contract_owner = await getAccountByName("account_1");
   const osmo_mars_token = new YieldBearingTokenContract();
   const mars_adapter = new MarsAdapterContract();
   await osmo_mars_token.setupClient();
@@ -30,6 +30,7 @@ export default async function run () {
   const adapter_init_response = await mars_adapter.instantiate(
     {
       "red_bank": externalContracts.red_bank.contract_addr,
+      "denom": "uosmo"
     },
     `mars_adapter ${runTs}`,
     contract_owner,
