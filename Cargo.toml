@@ -6,6 +6,11 @@ members = [
   "contracts/principle-token",
   "contracts/yield-token",
   "contracts/yield-bearing-token",
+  "contracts/pair",
+  "contracts/pair_stable",
+  "contracts/token",
+  "contracts/factory",
+  "contracts/periphery/*",
   "packages/*"
 ]
 
