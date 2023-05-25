@@ -168,7 +168,7 @@ pub fn try_deposit(
     // pToken amont = (ybToken amount) * exchangeRate
     // yToken amont = (ybToken amount) * exchangeRate
 
-    // Burn ybToken
+    // Hold ybToken
     // Mint pToken and yToken to the user
 
     let ybt_amount = _cw20_msg.amount;

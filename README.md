@@ -2,9 +2,9 @@
 
 <img src="./assets/FixedFiLogoColor.png" width=25% height=25%>
 
-FixedFi is a DeFi protocol built using CosmWasm contracts that let anyone access to fixed yield on their assets.
+FixedFi is a DeFi protocol built using CosmWasm contracts that lets anyone access to fixed yield on their assets.
 
-Split a yield bearing asset into principle token (pToken) and yield token (yToken) and yToken can be sold at a fixed price to fix the future yield and get it now. 
+Split a yield bearing asset into principle token (pToken) and yield token (yToken) and yToken can be sold at a fixed price to fix the future yield and to get it now.
 
 Users can even buy the pToken at discount w.r.t. undelying asset to get fixed yield without holding a yield bearing asset or having exposure to the yield or source of yield (the protocol).
 
