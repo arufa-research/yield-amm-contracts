@@ -29,10 +29,10 @@
   dependencies:
     "@archwayhq/arch3-core" "0.1.0"
 
-"@arufa/wasmkit@^0.1.6":
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/@arufa/wasmkit/-/wasmkit-0.1.6.tgz#6dd47780b8671b27da8d32fe8b2e249862f0ca07"
-  integrity sha512-dD/aOl8Hqbn9AjAJpFh6KwgzOtY9dYAvuc5S9NTUxQIXDC8YANT5uZYyY7HqKngPlfgQQWUViFDFPzOyBQDX/Q==
+"@arufa/wasmkit@^0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@arufa/wasmkit/-/wasmkit-0.1.7.tgz#3dc88742823e32b140d17fd25e175a8d2a8253e1"
+  integrity sha512-JmGUZBG704Aw2TS4v+ICYGC4+bZVaWGHxqa9iS0s+HI+uamEIXX8v78DSsSwaMY3RlQ4q3Un/Gn/RIQVPH0/iw==
   dependencies:
     "@archwayhq/arch3.js" "^0.1.0"
     "@babel/generator" "^7.18.2"
