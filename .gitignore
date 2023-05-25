@@ -21,3 +21,5 @@ package-lock.json
 *.pdb
 
 yarn-error.log
+
+contracts/**/schema/*
