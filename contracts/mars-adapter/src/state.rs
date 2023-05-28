@@ -12,7 +12,6 @@ pub struct Config {
     pub red_bank: Addr,
     pub underlying_denom: String,
     pub yield_bearing_denom: String,
-    pub yield_bearing_token: Addr,
 }
 
 #[cw_serde]

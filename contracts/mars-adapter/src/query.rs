@@ -30,7 +30,6 @@ pub fn query_config(
         red_bank: config.red_bank,
         underlying_denom: config.underlying_denom,
         yield_bearing_denom: config.yield_bearing_denom,
-        yield_bearing_token: config.yield_bearing_token,
     })
 }
 

@@ -7,7 +7,6 @@ pub struct InstantiateMsg {
     pub red_bank: Addr,
     pub underlying_denom: String,
     pub yield_bearing_denom: String,
-    pub yield_bearing_token: Addr,
 }
 
 #[cw_serde]
@@ -15,12 +14,8 @@ pub enum ExecuteMsg {
     Deposit {},
     UpdateYieldBearingDenom {
         yield_bearing_denom: String,
-        yield_bearing_token: Addr,
     },
     Withdraw {},
-
-    // Cw20 token interaction
-    // Receive(Cw20ReceiveMsg),
 }
 
 // used by receive cw20
@@ -63,7 +58,6 @@ pub struct ConfigResponse {
     pub red_bank: Addr,
     pub underlying_denom: String,
     pub yield_bearing_denom: String,
-    pub yield_bearing_token: Addr,
 }
 
 #[cw_serde]

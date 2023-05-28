@@ -1,7 +1,9 @@
 use cosmwasm_std::{
     entry_point, to_binary, Binary, Env, Deps, DepsMut,
-    MessageInfo, Response, StdError, StdResult, Uint128, WasmQuery, QueryRequest,
+    MessageInfo, Response, StdError, StdResult, Uint128, WasmQuery, QueryRequest, CosmosMsg,
 };
+
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
@@ -13,7 +15,7 @@ use crate::state::{Config, State, CONFIG, STATE};
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, StdError> {
@@ -22,8 +24,15 @@ pub fn instantiate(
         red_bank: msg.red_bank.clone(),
         underlying_denom: msg.underlying_denom.clone(),
         yield_bearing_denom: msg.yield_bearing_denom.clone(),
-        yield_bearing_token: msg.yield_bearing_token.clone(),
     };
+
+    // create yield_bearing_denom
+    // factory/contract_addr/yield_bearing_denom
+    let msg_create_denom: CosmosMsg = MsgCreateDenom {
+        sender: env.contract.address.to_string(),
+        subdenom: config.yield_bearing_denom.clone(),
+    }.into();
+    let messages = vec![msg_create_denom];
 
     let market_msg = RedBankQueryMsg::Market {
         denom: config.underlying_denom.clone(),
@@ -48,6 +57,7 @@ pub fn instantiate(
 
     Ok(
         Response::default()
+        .add_messages(messages)
         .add_attribute("action", "init")
         .add_attribute("sender", info.sender.clone())
         .add_attribute("underlying_denom", config.underlying_denom.clone())
@@ -64,9 +74,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => try_deposit(deps, info),
-        ExecuteMsg::UpdateYieldBearingDenom { yield_bearing_denom, yield_bearing_token } =>
-            try_update_yield_bearing_denom(deps, info, yield_bearing_denom, yield_bearing_token),
+        ExecuteMsg::Deposit {} => try_deposit(deps, env, info),
+        ExecuteMsg::UpdateYieldBearingDenom { yield_bearing_denom } =>
+            try_update_yield_bearing_denom(deps, info, yield_bearing_denom),
 
         // ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),
         ExecuteMsg::Withdraw {} => try_withdraw(deps, env, info),
