@@ -11,14 +11,14 @@ pub fn query_user_deposit(
     deps: Deps,
 ) -> StdResult<UserDepositResponse> {
     let state: State = STATE.load(deps.storage)?;
-    Ok(UserDepositResponse { osmo_amount: state.osmo_deposited })
+    Ok(UserDepositResponse { underlying_amount: state.underlying_deposited })
 }
 
 pub fn query_total_deposit(
     deps: Deps,
 ) -> StdResult<TotalDepositResponse> {
     let state: State = STATE.load(deps.storage)?;
-    Ok(TotalDepositResponse { osmo_amount: state.osmo_deposited })
+    Ok(TotalDepositResponse { underlying_amount: state.underlying_deposited })
 }
 
 pub fn query_config(
@@ -28,7 +28,9 @@ pub fn query_config(
     Ok(ConfigResponse {
         owner: config.owner,
         red_bank: config.red_bank,
-        yield_bearing_token: config.yield_bearing_token.unwrap(),
+        underlying_denom: config.underlying_denom,
+        yield_bearing_denom: config.yield_bearing_denom,
+        yield_bearing_token: config.yield_bearing_token,
     })
 }
 
@@ -37,7 +39,7 @@ pub fn query_state(
 ) -> StdResult<StateResponse> {
     let state: State = STATE.load(deps.storage)?;
     Ok(StateResponse {
-        osmo_deposited: state.osmo_deposited,
+        underlying_deposited: state.underlying_deposited,
         exchange_rate: state.exchange_rate,
     })
 }

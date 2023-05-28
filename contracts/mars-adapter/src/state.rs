@@ -10,12 +10,14 @@ use cw_storage_plus::Item;
 pub struct Config {
     pub owner: Addr,
     pub red_bank: Addr,
-    pub yield_bearing_token: Option<Addr>,
+    pub underlying_denom: String,
+    pub yield_bearing_denom: String,
+    pub yield_bearing_token: Addr,
 }
 
 #[cw_serde]
 pub struct State {
-    pub osmo_deposited: Uint128,
+    pub underlying_deposited: Uint128,
     pub exchange_rate: Decimal,
 }
 

@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::execute::{try_deposit, try_update_yield_bearing_token, try_receive_cw20};
+use crate::execute::{try_deposit, try_update_yield_bearing_denom, try_withdraw};
 use crate::query::{query_user_deposit, query_total_deposit, query_config, query_state};
 use crate::red_bank::{RedBankQueryMsg, MarketResponse};
 use crate::state::{Config, State, CONFIG, STATE};
@@ -20,11 +20,13 @@ pub fn instantiate(
     let config = Config {
         owner: info.sender.clone(),
         red_bank: msg.red_bank.clone(),
-        yield_bearing_token: None,
+        underlying_denom: msg.underlying_denom.clone(),
+        yield_bearing_denom: msg.yield_bearing_denom.clone(),
+        yield_bearing_token: msg.yield_bearing_token.clone(),
     };
 
     let market_msg = RedBankQueryMsg::Market {
-        denom: msg.denom.clone(),
+        denom: config.underlying_denom.clone(),
     };
     let market_query = WasmQuery::Smart {
         contract_addr: config.red_bank.to_string(),
@@ -35,7 +37,7 @@ pub fn instantiate(
     ))?;
 
     let state = State {
-        osmo_deposited: Uint128::from(0u128),
+        underlying_deposited: Uint128::from(0u128),
         exchange_rate: market_data.liquidity_index,
     };
 
@@ -44,10 +46,14 @@ pub fn instantiate(
 
     deps.api.debug(&format!("Contract was initialized by {}", info.sender));
 
-    Ok(Response::default()
+    Ok(
+        Response::default()
         .add_attribute("action", "init")
         .add_attribute("sender", info.sender.clone())
-        .add_attribute("red_bank address", config.red_bank.clone()))
+        .add_attribute("underlying_denom", config.underlying_denom.clone())
+        .add_attribute("yield_bearing_denom", config.yield_bearing_denom.clone())
+        .add_attribute("red_bank", config.red_bank.clone())
+    )
 }
 
 #[entry_point]
@@ -59,10 +65,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => try_deposit(deps, info),
-        ExecuteMsg::UpdateYieldBearingToken { yield_bearing_token } =>
-            try_update_yield_bearing_token(deps, info, yield_bearing_token),
+        ExecuteMsg::UpdateYieldBearingDenom { yield_bearing_denom, yield_bearing_token } =>
+            try_update_yield_bearing_denom(deps, info, yield_bearing_denom, yield_bearing_token),
 
-        ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),
+        // ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),
+        ExecuteMsg::Withdraw {} => try_withdraw(deps, env, info),
     }
 }
 
@@ -77,77 +84,5 @@ pub fn query(
         QueryMsg::TotalDeposit {} => to_binary(&query_total_deposit(deps)?),
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::State {} => to_binary(&query_state(deps)?),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_binary};
-
-    #[test]
-    fn proper_initialization() {
-        let mut deps = mock_dependencies();
-
-        let msg = InstantiateMsg { count: 17 };
-        let info = mock_info("creator", &coins(1000, "earth"));
-
-        // we can just call .unwrap() to assert this was a success
-        let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-        assert_eq!(0, res.messages.len());
-
-        // it worked, let's query the state
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(17, value.count);
-    }
-
-    #[test]
-    fn increment() {
-        let mut deps = mock_dependencies();
-
-        let msg = InstantiateMsg { count: 17 };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        // anyone can increment
-        let info = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Increment {};
-        let _res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        // should increase counter by 1
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(18, value.count);
-    }
-
-    #[test]
-    fn reset() {
-        let mut deps = mock_dependencies();
-
-        let msg = InstantiateMsg { count: 17 };
-        let info = mock_info("creator", &coins(2, "token"));
-        let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-
-        // not anyone can reset
-        let unauth_env = mock_info("anyone", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let res = execute(deps.as_mut(), mock_env(), unauth_env, msg);
-        match res {
-            Err(ContractError::Unauthorized {}) => {}
-            _ => panic!("Must return unauthorized error"),
-        }
-
-        // only the original creator can reset the counter
-        let auth_info = mock_info("creator", &coins(2, "token"));
-        let msg = ExecuteMsg::Reset { count: 5 };
-        let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
-
-        // should now be 5
-        let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-        let value: CountResponse = from_binary(&res).unwrap();
-        assert_eq!(5, value.count);
     }
 }
