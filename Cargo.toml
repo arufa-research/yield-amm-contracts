@@ -11,6 +11,7 @@ members = [
   "contracts/token",
   "contracts/factory",
   "contracts/periphery/*",
+  "contracts/tokenfactory-issuer",
   "packages/*"
 ]
 
