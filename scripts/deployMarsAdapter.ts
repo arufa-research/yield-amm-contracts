@@ -2,20 +2,51 @@ import { getAccountByName } from "@arufa/wasmkit";
 
 import externalContracts from "./external_contracts.json";
 import { MarsAdapterContract } from "../artifacts/typescript_schema/MarsAdapterContract";
-import { YieldBearingTokenContract } from "../artifacts/typescript_schema/YieldBearingTokenContract";
+import { TokenfactoryIssuerContract } from "../artifacts/typescript_schema/TokenfactoryIssuerContract";
 
 export default async function run () {
   const runTs = String(new Date());
   const contract_owner = await getAccountByName("account_0");
-  const osmo_mars_token = new YieldBearingTokenContract();
+  const tokenfactory_issuer = new TokenfactoryIssuerContract();
   const mars_adapter = new MarsAdapterContract();
-  await osmo_mars_token.setupClient();
+  await tokenfactory_issuer.setupClient();
   await mars_adapter.setupClient();
+
+  const underlyingDenom = "uosmo";
+  const ybtDenom = "osmomars";  // fullDenom: factory/<contract_address>/<subdenom>
 
   const customFees = { // custom fees
     amount: [{ amount: "750000", denom: "uosmo" }],
     gas: "4000000",
   };
+
+  // DEPLOY tokenFactory
+  const tf_deploy_response = await tokenfactory_issuer.deploy(
+    contract_owner,
+    { // custom fees
+      amount: [{ amount: "750000", denom: "uosmo" }],
+      gas: "12000000",
+    }
+  );
+  console.log(tf_deploy_response);
+
+  const tf_init_response = await tokenfactory_issuer.instantiate(
+    {
+      "new_token": {
+        "subdenom": ybtDenom,
+      }
+    },
+    `tokenfactory_issuer ${runTs}`,
+    contract_owner,
+    [
+      {
+        denom: underlyingDenom,
+        amount: "10000000", // 10 OSMO fee
+      },
+    ],
+    customFees,
+  );
+  console.log(tf_init_response);
 
   // DEPLOY MARS ADAPTER
   const adapter_deploy_response = await mars_adapter.deploy(
@@ -30,7 +61,9 @@ export default async function run () {
   const adapter_init_response = await mars_adapter.instantiate(
     {
       "red_bank": externalContracts.red_bank.contract_addr,
-      "denom": "uosmo"
+      "underlying_denom": underlyingDenom,
+      "yield_bearing_denom": `factory/${tokenfactory_issuer.contractAddress}/${ybtDenom}`,
+      "yield_bearing_token": tokenfactory_issuer.contractAddress,
     },
     `mars_adapter ${runTs}`,
     contract_owner,
@@ -39,38 +72,24 @@ export default async function run () {
   );
   console.log(adapter_init_response);
 
-  // DEPLOY YIELD BEARING TOKEN
-  const osmo_mars_deploy_response = await osmo_mars_token.deploy(
-    contract_owner,
-    { // custom fees
-      amount: [{ amount: "750000", denom: "uosmo" }],
-      gas: "12000000",
+  // set minter and burner to marsAdapter contract
+  const minter_response = await tokenfactory_issuer.setMinter(
+    { account: contract_owner, customFees: customFees },
+    { 
+      address: mars_adapter.contractAddress,
+      allowance: "1000000000000", // near infinite, TODO: fix later 
     }
   );
-  console.log(osmo_mars_deploy_response);
+  console.log("minter_response: ", minter_response);
 
-  const osmo_mars_init_response = await osmo_mars_token.instantiate(
-    {
-      "decimals": 6,
-      "initial_balances": [],
-      "mint": {
-        "minter": mars_adapter.contractAddress,
-      },
-      "name": "Yield bearing mars OSMO",
-      "symbol": "OSMOmars",
-    },
-    `osmo_mars ${runTs}`,
-    contract_owner,
-    undefined,  // transferAmount
-    customFees,
-  );
-  console.log(osmo_mars_init_response);
-
-  const update_yb_response = await mars_adapter.updateYieldBearingToken(
+  const burner_response = await tokenfactory_issuer.setBurner(
     { account: contract_owner, customFees: customFees },
-    { yieldBearingToken: osmo_mars_token.contractAddress }
+    { 
+      address: mars_adapter.contractAddress,
+      allowance: "1000000000000", // near infinite, TODO: fix later 
+    }
   );
-  console.log("update_yb_response: ", update_yb_response);
+  console.log("burner_response: ", burner_response);
 
   const deposit_response_before = await mars_adapter.totalDeposit();
   console.log(deposit_response_before);
@@ -86,7 +105,10 @@ export default async function run () {
       account: contract_owner,
       customFees: customFees,
       transferAmount: [
-        {denom: "uosmo", amount: "1000000"}, // 1 OSMO
+        {
+          denom: underlyingDenom,
+          amount: "1000000", // 1 OSMO
+        },
       ],
     }
   );
@@ -101,21 +123,23 @@ export default async function run () {
   const config_response_after = await mars_adapter.config();
   console.log(config_response_after);
 
-  const yb_balance = await osmo_mars_token.balance(
-    { address: contract_owner.account.address }
-  );
-  console.log(yb_balance);
+  // const yb_balance = await osmo_mars_token.balance(
+  //   { address: contract_owner.account.address }
+  // );
+  // console.log(yb_balance);
 
   // withdraw OSMO from contract
-  const withdraw_reponse = await osmo_mars_token.send(
-    { account: contract_owner, customFees: customFees },
-    {
-      amount: "600000",  // 0.6 OSMOmars
-      contract: mars_adapter.contractAddress,
-      msg: Buffer.from(JSON.stringify({
-        withdraw: {}
-      })).toString("base64"),
-    },
+  const withdraw_reponse = await mars_adapter.withdraw(
+    { 
+      account: contract_owner,
+      customFees: customFees,
+      transferAmount: [
+        {
+          denom: `factory/${tokenfactory_issuer.contractAddress}/${ybtDenom}`,
+          amount: "600000", // 0.6 OSMOmars
+        },
+      ],
+    }
   );
   console.log(withdraw_reponse);
 }
