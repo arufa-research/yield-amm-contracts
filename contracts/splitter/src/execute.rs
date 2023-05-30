@@ -1,39 +1,37 @@
 use cosmwasm_std::{
-    DepsMut, MessageInfo, Response, Uint128, Addr, CosmosMsg,
-    WasmMsg, StdError, to_binary, WasmQuery, QueryRequest, Decimal, Coin, Env, from_binary,
+    DepsMut, MessageInfo, Response, Uint128, CosmosMsg, Env,
+    StdError, to_binary, WasmQuery, QueryRequest, Decimal, Addr, BankMsg, coins,
 };
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::{MsgMint, MsgBurn};
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
 use crate::error::ContractError;
-use crate::msg::Cw20HookMsg;
 use crate::state::{CONFIG, Config, STATE, State};
-use crate::red_bank::{RedBankQueryMsg, MarketResponse, RedBankExecuteMsg};
+use crate::red_bank::{RedBankQueryMsg, MarketResponse};
 
 pub fn try_withdraw(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     let mut messages: Vec<CosmosMsg> = vec![];
-
-    // read amount of OSMO sent by user on deposit
-    let mut amount_raw: Uint128 = Uint128::default();
-    for coin in &info.funds {
-        if coin.denom == "uosmo" {
-            amount_raw = coin.amount
-        }
-    }
-
+    let contract_addr = env.contract.address.to_string();
+    
     let config: Config = CONFIG.load(deps.storage)?;
-    let yield_bearing_token = config.yield_bearing_token.ok_or_else(|| {
+    
+    let adapter_addr = config.mars_adapter.clone();
+    let rewards_contract = config.rewards_contract.ok_or_else(|| {
         ContractError::Std(StdError::generic_err(
-            "yield bearing token addr not registered".to_string(),
+            "rewards_contract addr not registered".to_string(),
         ))
     })?.to_string();
+    let yield_bearing_denom = config.yield_bearing_denom;
+    let principle_denom = config.principle_denom;
+    let yield_denom = config.yield_denom;
 
-    let mut state: State = STATE.load(deps.storage)?;
-    
+    // Fetch exchangeRate from red_bank
     let market_msg = RedBankQueryMsg::Market {
-        denom: "uosmo".into(), // TODO: pick this from initMsg
+        denom: config.underlying_denom.clone(),
     };
     let market_query = WasmQuery::Smart {
         contract_addr: config.red_bank.to_string(),
@@ -43,141 +41,117 @@ pub fn try_withdraw(
         market_query
     ))?;
 
-    // Update state (osmo_deposited, exchange_rate) first
-    // To check: should this be updated after deposit has been made?
-    state.osmo_deposited += amount_raw;
-    state.exchange_rate = market_data.liquidity_index;
-    STATE.save(deps.storage, &state)?;
+    // read user sent pToken and yToken amount
+    let mut ptoken_amount: Uint128 = Uint128::default();
+    let mut ytoken_amount: Uint128 = Uint128::default();
+    for coin in &info.funds {
+        if coin.denom == format!("factory/{contract_addr}/{principle_denom}") {
+            ptoken_amount = coin.amount
+        }
+        if coin.denom == format!("factory/{contract_addr}/{yield_denom}") {
+            ytoken_amount = coin.amount
+        }
+    }
 
-    // Deposit user's OSMO into red bank
-    let osmo_bank_deposit_msg = RedBankExecuteMsg::Deposit {
-        on_behalf_of: None,
-    };
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: config.red_bank.to_string(),
-        msg: to_binary(&osmo_bank_deposit_msg)?,
-        funds: vec![Coin {
-            denom: "uosmo".to_string(),
-            amount: amount_raw,
-        }],
-    }));
+    // if ptoken_amount != ytoken_amount or ptoken_amount == 0,
+    // then raise error
+    if ptoken_amount != ytoken_amount || ptoken_amount == Uint128::from(0u128) {
+        return Err(ContractError::Std(StdError::generic_err(
+            "pToken and yToken amount should be equal",
+        )));
+    }
 
-    // Calculate OSMOmars to mint = osmo_amount/exchange_rate
-    let yeild_bearing_amount = 
-        Decimal::from_ratio(amount_raw, Uint128::from(1u128))
+    // calc amount of ybToken to send to user
+    let ybt_amount = 
+        Decimal::from_ratio(ptoken_amount, Uint128::from(1u128))
             .checked_div(market_data.liquidity_index).unwrap().to_uint_floor();
 
-    // Mint OSMOmars cw20 token to user
-    let mint_msg = Cw20ExecuteMsg::Mint {
-        recipient: info.sender.to_string(),
-        amount: yeild_bearing_amount.into()
-    };
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: yield_bearing_token,
-        msg: to_binary(&mint_msg)?,
-        funds: vec![],
-    }));
+    // burn pToken and yToken
+    let burn_ptoken_msg: CosmosMsg = MsgBurn {
+        sender: contract_addr.clone(),
+        amount: Some(OsmoCoin {
+            denom: format!("factory/{contract_addr}/{principle_denom}"),
+            amount: ptoken_amount.into(),
+        }),
+        burn_from_address: contract_addr.clone(),
+    }
+    .into();
+    messages.push(burn_ptoken_msg);
+    let burn_ytoken_msg: CosmosMsg = MsgBurn {
+        sender: contract_addr.clone(),
+        amount: Some(OsmoCoin {
+            denom: format!("factory/{contract_addr}/{yield_denom}"),
+            amount: ytoken_amount.into(),
+        }),
+        burn_from_address: contract_addr.clone(),
+    }
+    .into();
+    messages.push(burn_ytoken_msg);
 
-    deps.api.debug("osmo deposited successfully");
+    // send ybToken to user
+    let send_ybt_msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(ybt_amount.u128(), format!("factory/{adapter_addr}/{yield_bearing_denom}")),
+    };
+    messages.push(cosmwasm_std::CosmosMsg::Bank(send_ybt_msg));
+
+    // calc amount of ybToken to send to reward contract
+    // send ybToken to reward contract
+
+    let mut state: State = STATE.load(deps.storage)?;
+
+    // Update state (yb_deposited, exchange_rate) first
+    // To check: should this be updated after deposit has been made?
+    state.exchange_rate = market_data.liquidity_index;
+
+    state.yb_deposited += ybt_amount;
+    state.prev_exchange_rate = market_data.liquidity_index;
+    STATE.save(deps.storage, &state)?;
+
+    deps.api.debug("ybToken withdrawn successfully");
     Ok(Response::new()
         .add_messages(messages)
-        .add_attribute("osmo_deposited", amount_raw.to_string())
-        .add_attribute("yield_bearing_minted", yeild_bearing_amount.to_string())
-        .add_attribute("total_osmo_deposited", state.osmo_deposited.to_string())
+        .add_attribute("ybToken withdrawn", ybt_amount.to_string())
+        .add_attribute("pToken burned", ptoken_amount.to_string())
+        .add_attribute("yToken burned", ytoken_amount.to_string())
         .add_attribute("exchange_rate", state.exchange_rate.to_string())
     )
 }
 
-pub fn try_update_yield_bearing_token(
+pub fn try_advance(
     deps: DepsMut,
-    info: MessageInfo,
-    yield_bearing_token: Addr,
+    _env: Env,
+    _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(ContractError::Std(StdError::generic_err(
-            "Admin commands can only be ran from owner address",
-        )));
-    }
-
-    config.yield_bearing_token = Some(yield_bearing_token);
-
-    CONFIG.save(deps.storage, &config)?;
-
-    deps.api.debug("yield bearing token address updated successfully");
-    Ok(Response::default())
-}
-
-pub fn try_update_principle_token(
-    deps: DepsMut,
-    info: MessageInfo,
-    principle_token: Addr,
-) -> Result<Response, ContractError> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(ContractError::Std(StdError::generic_err(
-            "Admin commands can only be ran from owner address",
-        )));
-    }
-
-    config.principle_token = Some(principle_token);
-
-    CONFIG.save(deps.storage, &config)?;
-
-    deps.api.debug("principle token address updated successfully");
-    Ok(Response::default())
-}
-
-pub fn try_update_yield_token(
-    deps: DepsMut,
-    info: MessageInfo,
-    yield_token: Addr,
-) -> Result<Response, ContractError> {
-    let mut config: Config = CONFIG.load(deps.storage)?;
-    if info.sender != config.owner {
-        return Err(ContractError::Std(StdError::generic_err(
-            "Admin commands can only be ran from owner address",
-        )));
-    }
-
-    config.yield_token = Some(yield_token);
-
-    CONFIG.save(deps.storage, &config)?;
-
-    deps.api.debug("yield token address updated successfully");
+    // calc amount of ybToken to send to reward contract
+    // send ybToken to reward contract
+    deps.api.debug("epoch moved successfully");
     Ok(Response::default())
 }
 
 pub fn try_deposit(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _cw20_msg: Cw20ReceiveMsg,
+    env: Env,
+    info: MessageInfo,
 ) -> Result<Response, ContractError> {
     let mut messages: Vec<CosmosMsg> = vec![];
-
+    let contract_addr = env.contract.address.to_string();
+    
     let config: Config = CONFIG.load(deps.storage)?;
-    let yield_bearing_token = config.yield_bearing_token.ok_or_else(|| {
+    
+    let adapter_addr = config.mars_adapter.clone();
+    let rewards_contract = config.rewards_contract.ok_or_else(|| {
         ContractError::Std(StdError::generic_err(
-            "yield bearing token addr not registered".to_string(),
+            "rewards_contract addr not registered".to_string(),
         ))
     })?.to_string();
+    let yield_bearing_denom = config.yield_bearing_denom;
+    let principle_denom = config.principle_denom;
+    let yield_denom = config.yield_denom;
 
     // Fetch exchangeRate from red_bank
-    // Calc amount of pToken and yToken to issue
-    // pToken amont = (ybToken amount) * exchangeRate
-    // yToken amont = (ybToken amount) * exchangeRate
-
-    // Hold ybToken
-    // Mint pToken and yToken to the user
-
-    let ybt_amount = _cw20_msg.amount;
-
-    // Calc amount of OSMO to withdraw against ybToken
-    let mut state: State = STATE.load(deps.storage)?;
-    
     let market_msg = RedBankQueryMsg::Market {
-        denom: "uosmo".into(), // TODO: pick this from initMsg
+        denom: config.underlying_denom.clone(),
     };
     let market_query = WasmQuery::Smart {
         contract_addr: config.red_bank.to_string(),
@@ -187,69 +161,123 @@ pub fn try_deposit(
         market_query
     ))?;
 
-    let osmo_amount = 
+    // read amount of yield_bearing_denom (OSMOmars) sent by user
+    let mut ybt_amount: Uint128 = Uint128::default();
+    for coin in &info.funds {
+        if coin.denom == format!("factory/{adapter_addr}/{yield_bearing_denom}") {
+            ybt_amount = coin.amount
+        }
+    }
+
+    // Calc amount of pToken and yToken to issue
+    // pToken amont = (ybToken amount) * exchangeRate
+    let ptoken_amount = 
         Decimal::from_ratio(ybt_amount, Uint128::from(1u128))
             .checked_mul(market_data.liquidity_index).unwrap().to_uint_floor();
 
-    // Update state (osmo_deposited, exchange_rate) first
+    // yToken amont = (ybToken amount) * exchangeRate
+    let ytoken_amount = 
+        Decimal::from_ratio(ybt_amount, Uint128::from(1u128))
+            .checked_mul(market_data.liquidity_index).unwrap().to_uint_floor();
+
+    // Hold ybToken
+    // Mint pToken and yToken to the user
+    let mint_ptoken_msg: CosmosMsg = MsgMint {
+        sender: contract_addr.clone(),
+        amount: Some(OsmoCoin {
+            denom: format!("factory/{contract_addr}/{principle_denom}"),
+            amount: ptoken_amount.into(),
+        }),
+        mint_to_address: contract_addr.clone(),
+    }
+    .into();
+    messages.push(mint_ptoken_msg);
+
+    let mint_ytoken_msg: CosmosMsg = MsgMint {
+        sender: contract_addr.clone(),
+        amount: Some(OsmoCoin {
+            denom: format!("factory/{contract_addr}/{yield_denom}"),
+            amount: ytoken_amount.into(),
+        }),
+        mint_to_address: contract_addr.clone(),
+    }
+    .into();
+    messages.push(mint_ytoken_msg);
+
+    // send minted pToken and yToken to user
+    let send_ptoken_msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(ptoken_amount.u128(), format!("factory/{contract_addr}/{principle_denom}")),
+    };
+    messages.push(cosmwasm_std::CosmosMsg::Bank(send_ptoken_msg));
+    let send_ytoken_msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: coins(ytoken_amount.u128(), format!("factory/{contract_addr}/{yield_denom}")),
+    };
+    messages.push(cosmwasm_std::CosmosMsg::Bank(send_ytoken_msg));
+
+    let mut state: State = STATE.load(deps.storage)?;
+
+    // Update state (yb_deposited, exchange_rate) first
     // To check: should this be updated after deposit has been made?
-    state.osmo_deposited = state.osmo_deposited.checked_sub(osmo_amount).unwrap();
     state.exchange_rate = market_data.liquidity_index;
+
+    // after updating exchange_rate and before updating prev_exchange_rate
+    // calc the amount of yield generated using formula
+    // (exchange_rate - prev_exchange_rate) * (ybt_deposited) / (prev_exchange_rate)
+    // multiple exchange rates with 10**6 before using
+    let rate_change = 
+        (state.exchange_rate - state.prev_exchange_rate).checked_div(state.prev_exchange_rate).unwrap();
+
+    // Some ybToken will go to rewards contract
+    // Divide tokenAmount with exch_rate to get ybToken amount
+    // TODO: cross check the calculation correctness
+    let reward_amount =  Decimal::from_ratio(state.yb_deposited, Uint128::from(1u128))
+        .checked_mul(rate_change).unwrap().checked_div(state.exchange_rate).unwrap().to_uint_floor();
+
+    // TODO: check if amt > 0 before sending
+    // // send reward_amount of ybToken to rewards_contract
+    // let send_ybt_rewards = BankMsg::Send {
+    //     to_address: rewards_contract.to_string(),
+    //     amount: coins(reward_amount.u128(), format!("factory/{adapter_addr}/{yield_bearing_denom}")),
+    // };
+    // messages.push(cosmwasm_std::CosmosMsg::Bank(send_ybt_rewards));
+
+    state.yb_deposited += ybt_amount;
+    state.prev_exchange_rate = market_data.liquidity_index;
     STATE.save(deps.storage, &state)?;
 
-    // Burn the ybToken CW20 token
-    let burn_msg = Cw20ExecuteMsg::Burn {
-        amount: ybt_amount.into()
-    };
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: yield_bearing_token,
-        msg: to_binary(&burn_msg)?,
-        funds: vec![],
-    }));
-
-    // Withdraw OSMO from mars with receiver as the sender
-    let osmo_bank_withdraw_msg = RedBankExecuteMsg::Withdraw {
-        denom: "uosmo".to_string(),
-        amount: Some(osmo_amount),
-        recipient: _cw20_msg.sender.into(),
-    };
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: config.red_bank.to_string(),
-        msg: to_binary(&osmo_bank_withdraw_msg)?,
-        funds: vec![],
-    }));
-
-    deps.api.debug("OSMO withdrawn successfully");
+    deps.api.debug("ybToken deposited successfully");
     Ok(Response::new()
         .add_messages(messages)
-        .add_attribute("osmo_withdrawn", osmo_amount.to_string())
-        .add_attribute("yield_bearing_burned", ybt_amount.to_string())
-        .add_attribute("total_osmo_deposited", state.osmo_deposited.to_string())
+        .add_attribute("ybToken deposited", ybt_amount.to_string())
+        .add_attribute("pToken minted", ptoken_amount.to_string())
+        .add_attribute("yToken minted", ytoken_amount.to_string())
         .add_attribute("exchange_rate", state.exchange_rate.to_string())
     )
 }
 
-pub fn try_receive_cw20(
+// pub fn try_calc_and_send_rewards(
+//     deps: DepsMut,
+//     env: Env,
+//     info: MessageInfo,
+// )
+
+pub fn try_update_rewards_contract(
     deps: DepsMut,
-    env: Env,
     info: MessageInfo,
-    _cw20_msg: Cw20ReceiveMsg,
+    rewards_contract: Addr,
 ) -> Result<Response, ContractError> {
-    let config: Config = CONFIG.load(deps.storage)?;
-    let yield_bearing_token = config.yield_bearing_token.ok_or_else(|| {
-        ContractError::Std(StdError::generic_err(
-            "yield bearing token addr not registered".to_string(),
-        ))
-    })?.to_string();
-    
-    match from_binary(&_cw20_msg.msg)? {
-        Cw20HookMsg::Deposit {} => {
-            // Check if ybToken is sent
-            if info.sender == yield_bearing_token {
-                try_deposit(deps, env, info, _cw20_msg)
-            } else {
-                Err(ContractError::Std(StdError::generic_err("unauthorized")))
-            }
-        }
+    let mut config: Config = CONFIG.load(deps.storage)?;
+    if info.sender != config.owner {
+        return Err(ContractError::Std(StdError::generic_err(
+            "Admin commands can only be ran from owner address",
+        )));
     }
+
+    config.rewards_contract = Some(rewards_contract);
+    CONFIG.save(deps.storage, &config)?;
+
+    deps.api.debug("rewards_contract address updated successfully");
+    Ok(Response::default())
 }

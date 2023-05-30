@@ -1,39 +1,33 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, Addr, Decimal};
-use cw20::Cw20ReceiveMsg;
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub red_bank: Addr,
-    pub expiry_time: Uint128,
-    pub denom: String,
-    pub underlying_asset: String,
+    pub mars_adapter: Addr,
+    pub epoch_period: u64,    // length of each epoch in seconds
+    pub expiry_period: u64,   // length of time till maturity
+    pub underlying_denom: String,
+    pub yield_bearing_denom: String,
+    pub principle_denom: String,
+    pub yield_denom: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
+    // Deposit ybToken to get pToken and yToken
+    Deposit {},
     // Deposit pToken and yToken to withdraw ybToken
     Withdraw {},
 
-    UpdateYieldBearingToken {
-        yield_bearing_token: Addr,
-    },
-    UpdatePrincipleToken {
-        principle_token: Addr,
-    },
-    UpdateYieldToken {
-        yield_token: Addr,
-    },
+    // Advance the epoch
+    // Calculate the yield since last epoch
+    // and send it over to rewards contract
+    Advance {},
 
-    // Cw20 token interaction
-    Receive(Cw20ReceiveMsg),
-}
-
-// used by receive cw20
-#[cw_serde]
-pub enum Cw20HookMsg {
-    // Deposit ybToken to get pToken and yToken
-    Deposit {},
+    UpdateRewardsContract {
+        rewards_contract: Addr,
+    },
 }
 
 #[cw_serde]
@@ -68,11 +62,14 @@ pub struct TotalDepositResponse {
 pub struct ConfigResponse {
     pub owner: Addr,
     pub red_bank: Addr,
-    pub yield_bearing_token: Addr,
-    pub principle_token: Addr,
-    pub yield_token: Addr,
-    pub expiry_time: Uint128,
-    pub underlying_asset: String,
+    pub mars_adapter: Addr,
+    pub underlying_denom: String,
+    pub yield_bearing_denom: String,
+    pub principle_denom: String,
+    pub yield_denom: String,
+    pub expiry_period: u64,
+    pub epoch_period: u64,
+    pub rewards_contract: Addr,
 }
 
 #[cw_serde]

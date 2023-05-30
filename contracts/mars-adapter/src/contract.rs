@@ -1,16 +1,16 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Env, Deps, DepsMut,
-    MessageInfo, Response, StdError, StdResult, Uint128, WasmQuery, QueryRequest, CosmosMsg,
+    entry_point, to_binary, Binary, Env, Deps, DepsMut, QueryRequest,
+    MessageInfo, Response, StdError, StdResult, CosmosMsg, WasmQuery, Uint128
 };
 
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 use crate::error::ContractError;
+use crate::state::{Config, State, CONFIG, STATE};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::red_bank::{RedBankQueryMsg, MarketResponse};
 use crate::execute::{try_deposit, try_update_yield_bearing_denom, try_withdraw};
 use crate::query::{query_user_deposit, query_total_deposit, query_config, query_state};
-use crate::red_bank::{RedBankQueryMsg, MarketResponse};
-use crate::state::{Config, State, CONFIG, STATE};
 
 #[entry_point]
 pub fn instantiate(
@@ -78,7 +78,6 @@ pub fn execute(
         ExecuteMsg::UpdateYieldBearingDenom { yield_bearing_denom } =>
             try_update_yield_bearing_denom(deps, info, yield_bearing_denom),
 
-        // ExecuteMsg::Receive(_msg) => try_receive_cw20(deps, env, info, _msg),
         ExecuteMsg::Withdraw {} => try_withdraw(deps, env, info),
     }
 }

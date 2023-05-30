@@ -28,11 +28,14 @@ pub fn query_config(
     Ok(ConfigResponse {
         owner: config.owner,
         red_bank: config.red_bank,
-        yield_bearing_token: config.yield_bearing_token.unwrap(),
-        principle_token: config.principle_token.unwrap(),
-        yield_token: config.yield_token.unwrap(),
-        expiry_time: config.expiry_time,
-        underlying_asset: config.underlying_asset,
+        mars_adapter: config.mars_adapter,
+        underlying_denom: config.underlying_denom,
+        yield_bearing_denom: config.yield_bearing_denom,
+        principle_denom: config.principle_denom,
+        yield_denom: config.yield_denom,
+        expiry_period: config.expiry_period,
+        epoch_period: config.epoch_period,
+        rewards_contract: config.rewards_contract.unwrap(),
     })
 }
 

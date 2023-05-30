@@ -74,7 +74,7 @@ pub fn try_deposit(
             denom: format!("factory/{contract_addr}/{yield_bearing_denom}"),
             amount: yeild_bearing_amount.into(),
         }),
-        mint_to_address: contract_addr.clone(), // TODO: this might be sending to contract
+        mint_to_address: contract_addr.clone(),
     }
     .into();
     messages.push(mint_msg);

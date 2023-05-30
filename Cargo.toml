@@ -1,17 +1,13 @@
 [workspace]
 members = [
-  "contracts/splitter",
   "contracts/mars-adapter",
-  "contracts/governance-token",
-  "contracts/principle-token",
-  "contracts/yield-token",
-  "contracts/yield-bearing-token",
+  "contracts/splitter",
+  "contracts/market",
   "contracts/pair",
   "contracts/pair_stable",
   "contracts/token",
   "contracts/factory",
   "contracts/periphery/*",
-  "contracts/tokenfactory-issuer",
   "packages/*"
 ]
 

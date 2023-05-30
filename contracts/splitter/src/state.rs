@@ -6,11 +6,14 @@ use cw_storage_plus::Item;
 pub struct Config {
     pub owner: Addr,
     pub red_bank: Addr,
-    pub yield_bearing_token: Option<Addr>,
-    pub principle_token: Option<Addr>,
-    pub yield_token: Option<Addr>,
-    pub expiry_time: Uint128,
-    pub underlying_asset: String,
+    pub mars_adapter: Addr,
+    pub underlying_denom: String,
+    pub yield_bearing_denom: String,
+    pub principle_denom: String,
+    pub yield_denom: String,
+    pub epoch_period: u64,
+    pub expiry_period: u64,
+    pub rewards_contract: Option<Addr>,
 }
 
 #[cw_serde]
@@ -19,6 +22,7 @@ pub struct State {
     pub p_issued: Uint128,
     pub y_issued: Uint128,
     pub exchange_rate: Decimal,
+    pub prev_exchange_rate: Decimal,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
