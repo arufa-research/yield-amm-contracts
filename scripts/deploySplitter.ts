@@ -12,6 +12,10 @@ export default async function run () {
   await osmo_mars_token.setupClient();
   await mars_adapter.setupClient();
 
+  // init tokenFactory contract with denom
+
+  // set minter and burner to splitter contract
+
   const customFees = { // custom fees
     amount: [{ amount: "750000", denom: "uosmo" }],
     gas: "4000000",

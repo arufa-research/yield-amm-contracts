@@ -2,18 +2,20 @@ import { getAccountByName } from "@arufa/wasmkit";
 
 import externalContracts from "./external_contracts.json";
 import { MarsAdapterContract } from "../artifacts/typescript_schema/MarsAdapterContract";
-// import { TokenfactoryIssuerContract } from "../artifacts/typescript_schema/TokenfactoryIssuerContract";
+import { SplitterContract } from "../artifacts/typescript_schema/SplitterContract";
 
 export default async function run () {
   const runTs = String(new Date());
   const contract_owner = await getAccountByName("account_0");
-  // const tokenfactory_issuer = new TokenfactoryIssuerContract();
   const mars_adapter = new MarsAdapterContract();
-  // await tokenfactory_issuer.setupClient();
+  const splitter = new SplitterContract();
   await mars_adapter.setupClient();
+  await splitter.setupClient();
 
   const underlyingDenom = "uosmo";
-  const ybtDenom = "osmomars";  // fullDenom: factory/<contract_address>/<subdenom>
+  const ybtDenom = "osmomars";  // fullDenom: factory/<contract_address>/ybtDenom
+  const pDenom = "posmomars";  // fullDenom: factory/<contract_address>/pDenom
+  const yDenom = "yosmomars";  // fullDenom: factory/<contract_address>/yDenom
 
   const customFees = { // custom fees
     amount: [{ amount: "750000", denom: "uosmo" }],
@@ -48,14 +50,13 @@ export default async function run () {
   );
   console.log(adapter_init_response);
 
-  const deposit_response_before = await mars_adapter.totalDeposit();
-  console.log(deposit_response_before);
+  // const deposit_response_before = await mars_adapter.totalDeposit();
+  // const state_response_before = await mars_adapter.state();
+  // const config_response_before = await mars_adapter.config();
 
-  const state_response_before = await mars_adapter.state();
-  console.log(state_response_before);
-
-  const config_response_before = await mars_adapter.config();
-  console.log(config_response_before);
+  // console.log(deposit_response_before);
+  // console.log(state_response_before);
+  // console.log(config_response_before);
 
   const do_deposit_response = await mars_adapter.deposit(
     {
@@ -71,14 +72,13 @@ export default async function run () {
   );
   console.log(do_deposit_response);
 
-  const deposit_response_after = await mars_adapter.totalDeposit();
-  console.log(deposit_response_after);
-
-  const state_response_after = await mars_adapter.state();
-  console.log(state_response_after);
-
-  const config_response_after = await mars_adapter.config();
-  console.log(config_response_after);
+  // const deposit_response_after = await mars_adapter.totalDeposit();
+  // const state_response_after = await mars_adapter.state();
+  // const config_response_after = await mars_adapter.config();
+  
+  // console.log(deposit_response_after);
+  // console.log(state_response_after);
+  // console.log(config_response_after);
 
   // const yb_balance = await osmo_mars_token.balance(
   //   { address: contract_owner.account.address }
@@ -99,4 +99,78 @@ export default async function run () {
     }
   );
   console.log(withdraw_reponse);
+
+  // DEPLOY SPLITTER
+  const splitter_deploy_response = await splitter.deploy(
+    contract_owner,
+    { // custom fees
+      amount: [{ amount: "750000", denom: "uosmo" }],
+      gas: "12000000",
+    }
+  );
+  console.log(splitter_deploy_response);
+
+  const splitter_init_response = await splitter.instantiate(
+    {
+      "red_bank": externalContracts.red_bank.contract_addr,
+      "mars_adapter": mars_adapter.contractAddress,
+      "underlying_denom": underlyingDenom,
+      "epoch_period": 10, // in seconds
+      "expiry_period": 360, // in seconds
+      "yield_bearing_denom": ybtDenom,
+      "principle_denom": pDenom,
+      "yield_denom": yDenom,
+    },
+    `splitter ${runTs}`,
+    contract_owner,
+    [
+      {
+        denom: underlyingDenom,
+        amount: "20000000", // 20 OSMO denom creation fee
+      },
+    ],
+    customFees,
+  );
+  console.log(splitter_init_response);
+
+  // TODO: deploy rewards contract
+  // combination of native-stake and native-external-rewards
+
+  const update_rewards_response = await splitter.updateRewardsContract(
+    { account: contract_owner, customFees: customFees },
+    { rewardsContract: externalContracts.red_bank.contract_addr },  // TODO: use the actual depoyed rewards_contract
+  );
+  console.log(update_rewards_response);
+
+  // deposit ybToken and get pToken and yToken
+  const yb_deposit_response = await splitter.deposit(
+    {
+      account: contract_owner,
+      customFees: customFees,
+      transferAmount: [{
+        denom: `factory/${mars_adapter.contractAddress}/${ybtDenom}`,
+        amount: "200000", // 0.2 OSMOmars
+      }],
+    },
+  );
+  console.log(JSON.stringify(yb_deposit_response, null, 2));
+
+  // withdraw ybToken by sending pToken and yToken
+  const yb_withdraw_response = await splitter.withdraw(
+    {
+      account: contract_owner,
+      customFees: customFees,
+      transferAmount: [
+        {
+          denom: `factory/${splitter.contractAddress}/${pDenom}`,
+          amount: "110000", // 0.11 pOSMOmars
+        },
+        {
+          denom: `factory/${splitter.contractAddress}/${yDenom}`,
+          amount: "110000", // 0.11 yOSMOmars
+        }
+      ],
+    },
+  );
+  console.log(JSON.stringify(yb_withdraw_response, null, 2));
 }
