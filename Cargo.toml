@@ -3,11 +3,6 @@ members = [
   "contracts/mars-adapter",
   "contracts/splitter",
   "contracts/market",
-  "contracts/pair",
-  "contracts/pair_stable",
-  "contracts/token",
-  "contracts/factory",
-  "contracts/periphery/*",
   "packages/*"
 ]
 
