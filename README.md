@@ -35,16 +35,17 @@ Users can even buy the pToken at discount w.r.t. undelying asset to get fixed yi
 4. Splitter splits the ybT into `principleToken` (`pT`) and `yieldToken` (`yT`). Eg. `pOsmoMars` + `yOsmoMars`.
 
 *(yield accumulation + distribution flow)*
+
 5. Yield Token (`yT`) is deposited into the stake-native contracts. This contract keeps track of yT against each user.
 6. Also, over time, yield (rewards) will be accumulated against the yield bearing token. These rewards are deposited into the "native stake external" contract every epoch (set to 24 hrs).
 7. To distribute these accumulated rewards, they're deposited into the stake-native contract.
 8. Finally, user can claim the rewards (original yield + accumulated rewards overtime) by interacting with the `stake-native` contract.
 
 *(market making)*
+
 9. Yield Bearing Token ybT (step 2), and Principal Token pT (step 4) are deposited into the Market contract which creates a pool of `pT + ybT`.
 10. User can swap b/w Principle Token, Yield Token and Yield Bearing Token (`pT` <-> `yT` <-> `ybT`) by interacting (deposit, withdraw) with the market contract.
 11. The market contract internally uses stableswap contract to factilitate the swaps. This is explained in the below sections in more detail.
-
 
 ## Switching from variable yield to fixed yeild
 
