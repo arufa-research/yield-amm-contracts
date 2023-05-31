@@ -23,6 +23,9 @@ Users can even buy the pToken at discount w.r.t. undelying asset to get fixed yi
 
 # User stories
 
+## User Flow Diagram
+
+
 ## Switching from variable yield to fixed yeild
 
 1. A ybToken got from depositing Token to a yield generating DeFi protocol.
@@ -51,7 +54,7 @@ Users can even buy the pToken at discount w.r.t. undelying asset to get fixed yi
 
 # Compiling contracts
 
-Use this command to compile your contracts: 
+Use this command to compile your contracts:
 
 ```bash
 $ wasmkit compile
