@@ -29,5 +29,6 @@ pub fn query_state(
         yb_in_pool: state.yb_in_pool,
         p_in_pool: state.p_in_pool,
         scaling_factor: state.scaling_factor,
+        pool_id: state.pool_id,
     })
 }

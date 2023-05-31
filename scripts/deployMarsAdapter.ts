@@ -3,14 +3,17 @@ import { getAccountByName } from "@arufa/wasmkit";
 import externalContracts from "./external_contracts.json";
 import { MarsAdapterContract } from "../artifacts/typescript_schema/MarsAdapterContract";
 import { SplitterContract } from "../artifacts/typescript_schema/SplitterContract";
+import { MarketContract } from "../artifacts/typescript_schema/MarketContract";
 
 export default async function run () {
   const runTs = String(new Date());
   const contract_owner = await getAccountByName("account_0");
   const mars_adapter = new MarsAdapterContract();
   const splitter = new SplitterContract();
+  const market = new MarketContract();
   await mars_adapter.setupClient();
   await splitter.setupClient();
+  await market.setupClient();
 
   const underlyingDenom = "uosmo";
   const ybtDenom = "osmomars";  // fullDenom: factory/<contract_address>/ybtDenom
@@ -155,22 +158,68 @@ export default async function run () {
   );
   console.log(JSON.stringify(yb_deposit_response, null, 2));
 
-  // withdraw ybToken by sending pToken and yToken
-  const yb_withdraw_response = await splitter.withdraw(
-    {
-      account: contract_owner,
-      customFees: customFees,
-      transferAmount: [
-        {
-          denom: `factory/${splitter.contractAddress}/${pDenom}`,
-          amount: "110000", // 0.11 pOSMOmars
-        },
-        {
-          denom: `factory/${splitter.contractAddress}/${yDenom}`,
-          amount: "110000", // 0.11 yOSMOmars
-        }
-      ],
-    },
+  // // withdraw ybToken by sending pToken and yToken
+  // const yb_withdraw_response = await splitter.withdraw(
+  //   {
+  //     account: contract_owner,
+  //     customFees: customFees,
+  //     transferAmount: [
+  //       {
+  //         denom: `factory/${splitter.contractAddress}/${pDenom}`,
+  //         amount: "110000", // 0.11 pOSMOmars
+  //       },
+  //       {
+  //         denom: `factory/${splitter.contractAddress}/${yDenom}`,
+  //         amount: "110000", // 0.11 yOSMOmars
+  //       }
+  //     ],
+  //   },
+  // );
+  // console.log(JSON.stringify(yb_withdraw_response, null, 2));
+
+  // DEPLOY MARKET (ybtDenom, pDenom) stableSwap pair with dynamic scaling factor
+  const market_deploy_response = await market.deploy(
+    contract_owner,
+    { // custom fees
+      amount: [{ amount: "750000", denom: "uosmo" }],
+      gas: "12000000",
+    }
   );
-  console.log(JSON.stringify(yb_withdraw_response, null, 2));
+  console.log(market_deploy_response);
+
+  const market_init_response = await market.instantiate(
+    {
+      "red_bank": externalContracts.red_bank.contract_addr,
+      "mars_adapter": mars_adapter.contractAddress,
+      "splitter": splitter.contractAddress,
+      "underlying_denom": underlyingDenom,
+      "yield_bearing_denom": ybtDenom,
+      "principle_denom": pDenom,
+      "yield_denom": yDenom,
+    },
+    `market ${runTs}`,
+    contract_owner,
+    [
+      {
+        denom: `factory/${splitter.contractAddress}/${pDenom}`,
+        amount: "100000", // 0.1 pToken for initial liquidity
+      },
+      {
+        denom: `factory/${mars_adapter.contractAddress}/${ybtDenom}`,
+        amount: "100000", // 0.1 ybToken for initial liquidity
+      },
+      {
+        denom: underlyingDenom,
+        amount: "100000000", // 100 OSMO pair creation fee
+      },
+    ],
+    customFees,
+  );
+  console.log(JSON.stringify(market_init_response, null, 2));
+
+  const market_config = await market.config();
+  const market_state = await market.state();
+
+  console.log("market_config: ", market_config);
+  console.log("market_state: ", market_state);
 }

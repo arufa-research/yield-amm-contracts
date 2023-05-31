@@ -1,6 +1,7 @@
 use cosmwasm_std::{
     DepsMut, MessageInfo, Response, Uint128, CosmosMsg, Env,
 };
+
 // use cosmwasm_std::{
 //     DepsMut, MessageInfo, Response, Uint128, CosmosMsg, Decimal, Coin,
 //     WasmMsg, StdError, to_binary, WasmQuery, QueryRequest, Env, BankMsg, coins,
@@ -8,7 +9,6 @@ use cosmwasm_std::{
 // use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 //     MsgMint, MsgBurn
 // };
-// use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
 use crate::error::ContractError;
 use crate::state::{CONFIG, Config, STATE, State};

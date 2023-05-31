@@ -24,6 +24,7 @@ pub struct State {
     pub yb_in_pool: Uint128,
     pub p_in_pool: Uint128,
     pub scaling_factor: u64,
+    pub pool_id: u64,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
